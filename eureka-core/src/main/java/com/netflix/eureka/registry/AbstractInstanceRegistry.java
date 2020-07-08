@@ -76,6 +76,21 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     private static final Logger logger = LoggerFactory.getLogger(AbstractInstanceRegistry.class);
 
     private static final String[] EMPTY_STR_ARRAY = new String[0];
+    /**
+     * key是appName,第二层Map的key是appId
+     *
+     * {
+     *     “ServiceA”: {
+     *         “001”: Lease<InstanceInfo>,
+     *         “002”: Lease<InstanceInfo>,
+     *         “003”: Lease<InstanceInfo>
+     *     },
+     *     “ServiceB”: {
+     *         “001”: Lease<InstanceInfo>
+     *     }
+     * }
+     *
+     */
     private final ConcurrentHashMap<String, Map<String, Lease<InstanceInfo>>> registry
             = new ConcurrentHashMap<String, Map<String, Lease<InstanceInfo>>>();
     protected Map<String, RemoteRegionRegistry> regionNameVSRemoteRegistry = new HashMap<String, RemoteRegionRegistry>();
@@ -84,7 +99,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             .expireAfterAccess(1, TimeUnit.HOURS)
             .<String, InstanceStatus>build().asMap();
 
-    // CircularQueues here for debugging/statistics purposes only
+    // CircularQueues here for debugging/statistics purposes only 默认保存最近1000条注册的实例信息
     private final CircularQueue<Pair<Long, String>> recentRegisteredQueue;
     private final CircularQueue<Pair<Long, String>> recentCanceledQueue;
     private ConcurrentLinkedQueue<RecentlyChangedItem> recentlyChangedQueue = new ConcurrentLinkedQueue<RecentlyChangedItem>();
@@ -191,6 +206,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      */
     public void register(InstanceInfo registrant, int leaseDuration, boolean isReplication) {
         try {
+            //使用的是读锁，方便多个服务实例同时来注册
             read.lock();
             Map<String, Lease<InstanceInfo>> gMap = registry.get(registrant.getAppName());
             REGISTER.increment(isReplication);
@@ -743,6 +759,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         } else {
             GET_ALL_CACHE_MISS.increment();
         }
+        // 存放服务实例
         Applications apps = new Applications();
         apps.setVersion(1L);
         for (Entry<String, Map<String, Lease<InstanceInfo>>> entry : registry.entrySet()) {

@@ -138,6 +138,9 @@ public class ApplicationResource {
      * @param isReplication
      *            a header parameter containing information whether this is
      *            replicated from other nodes.
+     *
+     *  做一些常规的chek，检查注册实例InstanceInfo的一些基本信息
+     * DataCenter的相关操作，这里还涉及到亚马逊云，我们直接跳过
      */
     @POST
     @Consumes({"application/json", "application/xml"})

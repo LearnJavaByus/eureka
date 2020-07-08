@@ -339,6 +339,8 @@ public class ResponseCacheImpl implements ResponseCache {
 
     /**
      * Get the payload in both compressed and uncompressed form.
+     *
+     * 读写缓存，这里用了两层的缓存结构，如果只读缓存不为空 则直接返回，如果为空查询可读缓存
      */
     @VisibleForTesting
     Value getValue(final Key key, boolean useReadOnlyCache) {
@@ -350,9 +352,11 @@ public class ResponseCacheImpl implements ResponseCache {
                     payload = currentPayload;
                 } else {
                     payload = readWriteCacheMap.get(key);
+                    //只读缓存
                     readOnlyCacheMap.put(key, payload);
                 }
             } else {
+                //读写缓存
                 payload = readWriteCacheMap.get(key);
             }
         } catch (Throwable t) {

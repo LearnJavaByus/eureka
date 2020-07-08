@@ -147,6 +147,7 @@ public class ApplicationsResource {
         );
 
         Response response;
+        // 从缓存中拿取全量的数据信息
         if (acceptEncoding != null && acceptEncoding.contains(HEADER_GZIP_VALUE)) {
             response = Response.ok(responseCache.getGZIP(cacheKey))
                     .header(HEADER_CONTENT_ENCODING, HEADER_GZIP_VALUE)
