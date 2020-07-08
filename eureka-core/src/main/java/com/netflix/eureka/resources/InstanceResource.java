@@ -101,6 +101,8 @@ public class InstanceResource {
      *            last timestamp when this instance information was updated.
      * @return response indicating whether the operation was a success or
      *         failure.
+     *
+     *  参与server端接收心跳检查请求、下线  ，基于@PUT接收
      */
     @PUT
     public Response renewLease(
@@ -275,6 +277,8 @@ public class InstanceResource {
      *            replicated from other nodes.
      * @return response indicating whether the operation was a success or
      *         failure.
+     *
+     * 接收client端的下线操作，server处理下线逻辑
      */
     @DELETE
     public Response cancelLease(

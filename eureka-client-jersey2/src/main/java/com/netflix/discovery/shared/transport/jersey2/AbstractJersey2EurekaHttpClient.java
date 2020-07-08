@@ -108,6 +108,12 @@ public abstract class AbstractJersey2EurekaHttpClient implements EurekaHttpClien
         }
     }
 
+    /**
+     * 参与下线操作
+     * @param appName
+     * @param id
+     * @return
+     */
     @Override
     public EurekaHttpResponse<Void> cancel(String appName, String id) {
         String urlPath = "apps/" + appName + '/' + id;
@@ -116,6 +122,7 @@ public abstract class AbstractJersey2EurekaHttpClient implements EurekaHttpClien
             Builder resourceBuilder = jerseyClient.target(serviceUrl).path(urlPath).request();
             addExtraProperties(resourceBuilder);
             addExtraHeaders(resourceBuilder);
+            // 基于restful,使用delete操作
             response = resourceBuilder.delete();
             return anEurekaHttpResponse(response.getStatus()).headers(headersOf(response)).build();
         } finally {

@@ -315,14 +315,19 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      * in the remote peers as valid cancellations, so self preservation mode would not kick-in.
      */
     protected boolean internalCancel(String appName, String id, boolean isReplication) {
+       // 执行下线操作
         try {
+            //加上读锁，支持多服务实例下线
             read.lock();
             CANCEL.increment(isReplication);
+            // 通过appName获取注册表信息
             Map<String, Lease<InstanceInfo>> gMap = registry.get(appName);
             Lease<InstanceInfo> leaseToCancel = null;
             if (gMap != null) {
+                // 通过实例id将注册信息从注册表中移除
                 leaseToCancel = gMap.remove(id);
             }
+            // 最近取消的注册表信息队列添加该注册表信息
             synchronized (recentCanceledQueue) {
                 recentCanceledQueue.add(new Pair<Long, String>(System.currentTimeMillis(), appName + "(" + id + ")"));
             }
@@ -335,17 +340,20 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 logger.warn("DS: Registry: cancel failed because Lease is not registered for: {}/{}", appName, id);
                 return false;
             } else {
+                // 执行下线操作的cancel方法
                 leaseToCancel.cancel();
                 InstanceInfo instanceInfo = leaseToCancel.getHolder();
                 String vip = null;
                 String svip = null;
                 if (instanceInfo != null) {
                     instanceInfo.setActionType(ActionType.DELETED);
+                    // 最近更新的队列中加入此服务实例信息
                     recentlyChangedQueue.add(new RecentlyChangedItem(leaseToCancel));
                     instanceInfo.setLastUpdatedTimestamp();
                     vip = instanceInfo.getVIPAddress();
                     svip = instanceInfo.getSecureVipAddress();
                 }
+                // 使注册表的读写缓存失效
                 invalidateCache(appName, vip, svip);
                 logger.info("Cancelled instance {}/{} (replication={})", appName, id, isReplication);
                 return true;
@@ -360,9 +368,12 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      * replication.
      *
      * @see com.netflix.eureka.lease.LeaseManager#renew(java.lang.String, java.lang.String, boolean)
+     *
+     * 参与server端接收心跳检查请求  ，基于@PUT接收
      */
     public boolean renew(String appName, String id, boolean isReplication) {
         RENEW.increment(isReplication);
+        //通过appName获取对应的服务注册表信息
         Map<String, Lease<InstanceInfo>> gMap = registry.get(appName);
         Lease<InstanceInfo> leaseToRenew = null;
         if (gMap != null) {
@@ -397,6 +408,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 }
             }
             renewsLastMin.increment();
+            //设置当前示例注册表的renew属性的lastUpdateTimestamp 为最新时间+duration
             leaseToRenew.renew();
             return true;
         }
@@ -592,6 +604,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      * Evicts everything in the instance registry that has expired, if expiry is enabled.
      *
      * @see com.netflix.eureka.lease.LeaseManager#evict()
+     *
+     * 摘除过期没有发送心跳的实例
      */
     @Override
     public void evict() {
@@ -601,6 +615,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     public void evict(long additionalLeaseMs) {
         logger.debug("Running the evict task");
 
+        // 是否允许主动删除宕机节点数据，这里判断是否进入自我保护机制，如果是自我保护了则不允许摘除服务
         if (!isLeaseExpirationEnabled()) {
             logger.debug("DS: lease expiration is currently disabled.");
             return;
@@ -1268,6 +1283,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         @Override
         public void run() {
             try {
+                // 获取补偿时间 可能大于0
                 long compensationTimeMs = getCompensationTimeMs();
                 logger.info("Running the evict task with compensationTime {}ms", compensationTimeMs);
                 evict(compensationTimeMs);
@@ -1283,13 +1299,25 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
          * according to the configured cycle.
          */
         long getCompensationTimeMs() {
+            // 第一次进来先获取当前时间 currNanos=20:00:00
+            // 第二次过来，此时currNanos=20:01:00
+            // 第三次过来，currNanos=20:03:00才过来，本该60s调度一次的，由于fullGC或者其他原因，到了这个时间点没执行
             long currNanos = getCurrentTimeNano();
+
+            // 获取上一次这个EvictionTask执行的时间 getAndSet ：以原子方式设置为给定值，并返回以前的值
+            // 第一次 将20:00:00 设置到lastNanos，然后return 0
+            // 第二次过来后，拿到的lastNanos为20:00:00
+            // 第三次过来，拿到的lastNanos为20:01:00
             long lastNanos = lastExecutionNanosRef.getAndSet(currNanos);
             if (lastNanos == 0l) {
                 return 0l;
             }
 
+            // 第二次进来，计算elapsedMs = 60s
+            // 第三次进来，计算elapsedMs = 120s
             long elapsedMs = TimeUnit.NANOSECONDS.toMillis(currNanos - lastNanos);
+            // 第二次进来，配置的服务驱逐间隔默认时间为60s，计算的补偿时间compensationTime=0
+            // 第三次进来，配置的服务驱逐间隔默认时间为60s，计算的补偿时间compensationTime=60s
             long compensationTime = elapsedMs - serverConfig.getEvictionIntervalTimerInMs();
             return compensationTime <= 0l ? 0l : compensationTime;
         }

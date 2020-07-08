@@ -68,6 +68,7 @@ public class Lease<T> {
      * Cancels the lease by updating the eviction time.
      */
     public void cancel() {
+        // 这里只是更新服务实例中下线的时间戳
         if (evictionTimestamp <= 0) {
             evictionTimestamp = System.currentTimeMillis();
         }
@@ -108,6 +109,17 @@ public class Lease<T> {
      * @param additionalLeaseMs any additional lease time to add to the lease evaluation in ms.
      */
     public boolean isExpired(long additionalLeaseMs) {
+        // lastUpdateTimestamp renew成功后就会刷新这个时间，可以理解为最近一次活跃时间
+        // 查看 Lease.renew方法：lastUpdateTimestamp = System.currentTimeMillis() + duration;
+        // duration可以查看为：LeaseInfo中的DEFAULT_LEASE_RENEWAL_INTERVAL=90s 默认为90s
+        // 这段逻辑为 当前时间 > 上一次心跳时间 + 90s + 补偿时间
+        /**
+         * 这里先不看补偿时间，假设补偿时间为0，这段的含义是 如果当前时间大于上次续约的时间+90s，那么就认为该实例过期了
+         * 因为lastUpdateTimestamp=System.currentTimeMillis()+duration，所以这里可以理解为 超过180是还没有续约，那么就认为该服务实例过期了
+         *
+         * additionalLeaseMs 时间是一个容错的机制，也是服务保持最终一致性的一种手段，针对于定时任务 因为一些不可控原因在某些时间点没有定时执行，那么这个就是很好的容错机制
+         * 这段代码 意思现在理解为：服务如果宕机了，那么最少180s 才会被注册中心摘除掉
+         */
         return (evictionTimestamp > 0 || System.currentTimeMillis() > (lastUpdateTimestamp + duration + additionalLeaseMs));
     }
 

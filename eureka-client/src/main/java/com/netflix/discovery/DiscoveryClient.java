@@ -106,6 +106,8 @@ import com.netflix.servo.monitor.Stopwatch;
  * @author Karthik Ranganathan, Greg Kim
  * @author Spencer Gibb
  *
+ * 参与client端初始化、注册、服务实例续约
+ *
  */
 @Singleton
 public class DiscoveryClient implements EurekaClient {
@@ -892,6 +894,8 @@ public class DiscoveryClient implements EurekaClient {
     /**
      * Shuts down Eureka Client. Also sends a deregistration request to the
      * eureka server.
+     *
+     * 下线操作
      */
     @PreDestroy
     @Override
@@ -899,23 +903,27 @@ public class DiscoveryClient implements EurekaClient {
         if (isShutdown.compareAndSet(false, true)) {
             logger.info("Shutting down DiscoveryClient ...");
 
+            // 去掉监听器
             if (statusChangeListener != null && applicationInfoManager != null) {
                 applicationInfoManager.unregisterStatusChangeListener(statusChangeListener.getId());
             }
 
+            // 取消调度任务
             cancelScheduledTasks();
 
             // If APPINFO was registered
             if (applicationInfoManager != null && clientConfig.shouldRegisterWithEureka()) {
                 applicationInfoManager.setInstanceStatus(InstanceStatus.DOWN);
+                // 不注册，通知Server端
                 unregister();
             }
 
             if (eurekaTransport != null) {
                 eurekaTransport.shutdown();
             }
-
+            // 关闭心跳
             heartbeatStalenessMonitor.shutdown();
+            // 关闭监控
             registryStalenessMonitor.shutdown();
 
             logger.info("Completed shut down of DiscoveryClient");
