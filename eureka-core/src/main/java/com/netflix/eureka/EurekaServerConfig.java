@@ -35,6 +35,8 @@ import java.util.Set;
  *
  * @author Karthik Ranganathan
  *
+ * EurekaServerConfigure基于接口对外暴露配置方法的设计方式,对外暴露各个配置项的获取方法
+ *
  */
 public interface EurekaServerConfig {
 

@@ -84,7 +84,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
         this.transportConfig = new DefaultEurekaTransportConfig(namespace, configInstance);
     }
 
-    /*
+    /**
      * (non-Javadoc)
      *
      * @see
@@ -97,7 +97,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
                 namespace + REGISTRY_REFRESH_INTERVAL_KEY, 30).get();
     }
 
-    /*
+    /**
      * (non-Javadoc)
      *
      * @see com.netflix.discovery.EurekaClientConfig#
@@ -115,7 +115,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
                 namespace + INITIAL_REGISTRATION_REPLICATION_DELAY_KEY, 40).get();
     }
 
-    /*
+    /**
      * (non-Javadoc)
      *
      * @see com.netflix.discovery.EurekaClientConfig#getDnsPollIntervalSeconds()
@@ -126,7 +126,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
                 namespace + EUREKA_SERVER_URL_POLL_INTERVAL_KEY, 5 * 60 * 1000).get() / 1000;
     }
 
-    /*
+    /**
      * (non-Javadoc)
      *
      * @see com.netflix.discovery.EurekaClientConfig#getProxyHost()
@@ -137,7 +137,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
                 namespace + EUREKA_SERVER_PROXY_HOST_KEY, null).get();
     }
 
-    /*
+    /**
      * (non-Javadoc)
      *
      * @see com.netflix.discovery.EurekaClientConfig#getProxyPort()
@@ -160,7 +160,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
                 namespace + EUREKA_SERVER_PROXY_PASSWORD_KEY, null).get();
     }
 
-    /*
+    /**
      * (non-Javadoc)
      *
      * @see com.netflix.discovery.EurekaClientConfig#shouldGZipContent()
@@ -171,7 +171,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
                 namespace + EUREKA_SERVER_GZIP_CONTENT_KEY, true).get();
     }
 
-    /*
+    /**
      * (non-Javadoc)
      *
      * @see com.netflix.discovery.EurekaClientConfig#getDSServerReadTimeout()
@@ -182,7 +182,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
                 namespace + EUREKA_SERVER_READ_TIMEOUT_KEY, 8).get();
     }
 
-    /*
+    /**
      * (non-Javadoc)
      *
      * @see com.netflix.discovery.EurekaClientConfig#getDSServerConnectTimeout()
@@ -193,7 +193,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
                 namespace + EUREKA_SERVER_CONNECT_TIMEOUT_KEY, 5).get();
     }
 
-    /*
+    /**
      * (non-Javadoc)
      *
      * @see com.netflix.discovery.EurekaClientConfig#getBackupRegistryImpl()
@@ -204,7 +204,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
                 null).get();
     }
 
-    /*
+    /**
      * (non-Javadoc)
      *
      * @see
@@ -279,12 +279,14 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
                 false).get();
     }
 
-    /*
+    /**
      * (non-Javadoc)
      *
      * @see
      * com.netflix.discovery.EurekaClientConfig#getDiscoveryRegistrationEnabled
      * ()
+     * eurekaServer有个配置：eureka.client.registerWithEureka，
+     * 单机情况下为false。false表示自己不需要向注册中心注册自己
      */
     @Override
     public boolean shouldRegisterWithEureka() {
@@ -407,6 +409,11 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
                 .get();
     }
 
+    /**
+     * eurekaServer有个配置：eureka.client.fetchRegistry，
+     * 单机情况下为false。false表示自己就是注册中心。我的职责就是维护服务实例，并不需要去检索服务
+     * @return
+     */
     @Override
     public boolean shouldFetchRegistry() {
         return configInstance.getBooleanProperty(

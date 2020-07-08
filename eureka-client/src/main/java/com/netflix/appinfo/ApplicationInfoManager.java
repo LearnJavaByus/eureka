@@ -43,6 +43,8 @@ import org.slf4j.LoggerFactory;
  *
  * @author Karthik Ranganathan, Greg Kim
  *
+ * 包含了服务实例的信息、配置，作为服务实例管理的一个组件
+ *
  */
 @Singleton
 public class ApplicationInfoManager {

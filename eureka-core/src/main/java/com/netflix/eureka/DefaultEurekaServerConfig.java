@@ -68,6 +68,9 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
             .getLogger(DefaultEurekaServerConfig.class);
     private static final DynamicPropertyFactory configInstance = com.netflix.config.DynamicPropertyFactory
             .getInstance();
+    /**
+     * 对应着要加载的eureka的配置文件的名字
+     */
     private static final DynamicStringProperty EUREKA_PROPS_FILE = DynamicPropertyFactory
             .getInstance().getStringProperty("eureka.server.props",
                     "eureka-server");
@@ -97,6 +100,9 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
         init();
     }
 
+    /**
+     * 完成eureka-server.properties文件中的配置项的加载
+     */
     private void init() {
         String env = ConfigurationManager.getConfigInstance().getString(
                 EUREKA_ENVIRONMENT, TEST);
