@@ -116,7 +116,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     private final AtomicReference<EvictionTask> evictionTaskRef = new AtomicReference<EvictionTask>();
 
     protected String[] allKnownRemoteRegions = EMPTY_STR_ARRAY;
+    // 代表每分钟期待的心跳次数乘以默认的心跳配比85%得到
     protected volatile int numberOfRenewsPerMinThreshold;
+    //代表每分钟期待的心跳时间或期待的一分钟注册中心接收到的总心跳时间
     protected volatile int expectedNumberOfRenewsPerMin;
 
     protected final EurekaServerConfig serverConfig;
@@ -606,6 +608,12 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      * @see com.netflix.eureka.lease.LeaseManager#evict()
      *
      * 摘除过期没有发送心跳的实例
+     *
+     * 将所有需要摘除的服务实例放到expiredLeases 集合中去
+     * 计算服务摘除的阈值，registrySizeThreshold 为注册实例总数量 * 85%
+     * 计算最多可摘除的服务实例个数：总数量 - 总数量 * 85%
+     * 这里实则也是一种保护机制，即使我很多服务宕机了，但是最多只能摘除15%的服务实例。
+     * 随机摘取指定的服务实例数量，然后遍历调用internalCancel 方法来remove宕机的服务实例， 这里就是上面讲解的服务下线调用的方法
      */
     @Override
     public void evict() {
