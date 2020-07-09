@@ -47,8 +47,10 @@ class AcceptorExecutor<ID, T> {
 
     private static final Logger logger = LoggerFactory.getLogger(AcceptorExecutor.class);
 
+    // 默认为250
     private final int maxBufferSize;
     private final int maxBatchingSize;
+    //  默认为500ms
     private final long maxBatchingDelay;
 
     private final AtomicBoolean isShutdown = new AtomicBoolean(false);
@@ -183,6 +185,7 @@ class AcceptorExecutor<ID, T> {
             long scheduleTime = 0;
             while (!isShutdown.get()) {
                 try {
+                    // 处理acceptorQueue队列中的数据
                     drainInputQueues();
 
                     int totalItems = processingOrder.size();
@@ -192,6 +195,7 @@ class AcceptorExecutor<ID, T> {
                         scheduleTime = now + trafficShaper.transmissionDelay();
                     }
                     if (scheduleTime <= now) {
+                        // 将processingOrder拆分成一个个batch，然后进行操作
                         assignBatchWork();
                         assignSingleItemWork();
                     }
@@ -233,6 +237,7 @@ class AcceptorExecutor<ID, T> {
 
         private void drainAcceptorQueue() {
             while (!acceptorQueue.isEmpty()) {
+                // 将acceptor队列中的数据放入到processingOrder队列中去，方便后续拆分成batch
                 appendTaskHolder(acceptorQueue.poll());
             }
         }
@@ -307,6 +312,7 @@ class AcceptorExecutor<ID, T> {
                         batchWorkRequests.release();
                     } else {
                         batchSizeMetric.record(holders.size(), TimeUnit.MILLISECONDS);
+                        // 将批量数据放入到batchWorkQueue中
                         batchWorkQueue.add(holders);
                     }
                 }
@@ -317,10 +323,12 @@ class AcceptorExecutor<ID, T> {
             if (processingOrder.isEmpty()) {
                 return false;
             }
+            // 默认maxBufferSize为250
             if (pendingTasks.size() >= maxBufferSize) {
                 return true;
             }
 
+            // 默认maxBatchingDelay为500ms
             TaskHolder<ID, T> nextHolder = pendingTasks.get(processingOrder.peek());
             long delay = System.currentTimeMillis() - nextHolder.getSubmitTimestamp();
             return delay >= maxBatchingDelay;

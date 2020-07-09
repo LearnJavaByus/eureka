@@ -660,6 +660,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                                   InstanceStatus newStatus /* optional */, boolean isReplication) {
         Stopwatch tracer = action.getTimer().start();
         try {
+            //isReplication如果是true，代表是其他Eureka Server节点同步的，false则是EurekaClient注册来的。
             if (isReplication) {
                 numberOfReplicationsLastMin.increment();
             }
@@ -668,11 +669,13 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                 return;
             }
 
+            // 拿到所有的Eureka Server节点，循环遍历去同步数据
             for (final PeerEurekaNode node : peerEurekaNodes.getPeerEurekaNodes()) {
                 // If the url represents this host, do not replicate to yourself.
                 if (peerEurekaNodes.isThisMyUrl(node.getServiceUrl())) {
                     continue;
                 }
+                //根据注册、下线、续约等去处理不同逻辑
                 replicateInstanceActionsToPeers(action, appName, id, info, newStatus, node);
             }
         } finally {
