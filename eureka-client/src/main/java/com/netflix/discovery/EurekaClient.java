@@ -45,6 +45,8 @@ public interface EurekaClient extends LookupService {
      *
      * @param serviceUrl The string representation of the service url.
      * @return The registry information containing all applications.
+     *
+     * 获取应用集合
      */
     public Applications getApplications(String serviceUrl);
 

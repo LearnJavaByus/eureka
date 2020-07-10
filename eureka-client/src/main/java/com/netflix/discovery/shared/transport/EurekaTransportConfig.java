@@ -8,16 +8,22 @@ package com.netflix.discovery.shared.transport;
 public interface EurekaTransportConfig {
 
     /**
+     * EurekaHttpClient 会话周期性重连时间，单位：秒
      * @return the reconnect inverval to use for sessioned clients
      */
     int getSessionedClientReconnectIntervalSeconds();
 
     /**
+     * 重试 EurekaHttpClient ，请求失败的 Eureka-Server 隔离集合占比 Eureka-Server 全量集合占比，超过该比例，进行清空。
+     *
      * @return the percentage of the full endpoints set above which the quarantine set is cleared in the range [0, 1.0]
      */
     double getRetryableClientQuarantineRefreshPercentage();
 
     /**
+     *
+     * 写入集群和读取集群
+     *
      * @return the max staleness threshold tolerated by the applications resolver
      */
     int getApplicationsResolverDataStalenessThresholdSeconds();
@@ -27,21 +33,29 @@ public interface EurekaTransportConfig {
      * Set this to true to change this behaviour to use ip addresses instead (private ip if ip type can be determined).
      *
      * @return false by default
+     *
+     * 写入集群和读取集群。
      */
     boolean applicationsResolverUseIp();
 
     /**
      * @return the interval to poll for the async resolver.
+     *
+     * 异步解析 EndPoint 集群频率，单位：毫秒。
      */
     int getAsyncResolverRefreshIntervalMs();
 
     /**
      * @return the async refresh timeout threshold in ms.
+     *
+     * 异步解析器预热解析 EndPoint 集群超时时间，单位：毫秒。
      */
     int getAsyncResolverWarmUpTimeoutMs();
 
     /**
      * @return the max threadpool size for the async resolver's executor
+     *
+     * 异步解析器线程池大小。
      */
     int getAsyncExecutorThreadPoolSize();
 
@@ -49,12 +63,16 @@ public interface EurekaTransportConfig {
      * The remote vipAddress of the primary eureka cluster to register with.
      *
      * @return the vipAddress for the write cluster to register with
+     *
+     * 写入集群和读取集群。
      */
     String getWriteClusterVip();
 
     /**
      * The remote vipAddress of the eureka cluster (either the primaries or a readonly replica) to fetch registry
      * data from.
+     *
+     * 写入集群和读取集群。
      *
      * @return the vipAddress for the readonly cluster to redirect to, if applicable (can be the same as the bootstrap)
      */
@@ -68,6 +86,8 @@ public interface EurekaTransportConfig {
      *    fall back to a backing default
      *
      * @return null for the default strategy, by default
+     *
+     * 写入集群和读取集群。
      */
     String getBootstrapResolverStrategy();
 
@@ -79,6 +99,8 @@ public interface EurekaTransportConfig {
      * targets as the bootstrap servers depending on how servers are setup.
      *
      * @return true by default.
+     *
+     * 写入集群和读取集群。
      */
     boolean useBootstrapResolverForQuery();
 }

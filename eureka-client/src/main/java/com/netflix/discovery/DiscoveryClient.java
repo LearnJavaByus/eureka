@@ -108,6 +108,10 @@ import com.netflix.servo.monitor.Stopwatch;
  *
  * 参与client端初始化、注册、服务实例续约
  *
+ * 实现 EurekaClient 接口，用于与 Eureka-Server 交互
+ *
+ * 向 Eureka-Server 注册自身服务、续约自身服务、 取消自身服务，当关闭时、查询应用集合和应用实例信息
+ *
  */
 @Singleton
 public class DiscoveryClient implements EurekaClient {
@@ -138,22 +142,45 @@ public class DiscoveryClient implements EurekaClient {
      * A scheduler to be used for the following 3 tasks:
      * - updating service urls
      * - scheduling a TimedSuperVisorTask
+     *
+     * 线程池
      */
     private final ScheduledExecutorService scheduler;
     // additional executors for supervised subtasks
+    /**
+     * 心跳执行器
+     */
     private final ThreadPoolExecutor heartbeatExecutor;
+    /**
+     * 刷新执行器
+     */
     private final ThreadPoolExecutor cacheRefreshExecutor;
 
     private final Provider<HealthCheckHandler> healthCheckHandlerProvider;
     private final Provider<HealthCheckCallback> healthCheckCallbackProvider;
+    /**
+     * 执行向 Eureka-Server 注册之前的处理器
+     */
     private final PreRegistrationHandler preRegistrationHandler;
+    /**
+     * Applications 在本地的缓存
+     */
     private final AtomicReference<Applications> localRegionApps = new AtomicReference<Applications>();
     private final Lock fetchRegistryUpdateLock = new ReentrantLock();
     // monotonically increasing generation counter to ensure stale threads do not reset registry to an older version
+    /**
+     * 拉取注册信息次数
+     */
     private final AtomicLong fetchRegistryGeneration;
     private final ApplicationInfoManager applicationInfoManager;
     private final InstanceInfo instanceInfo;
+    /**
+     * 获取哪些区域( Region )集合的注册信息
+     */
     private final AtomicReference<String> remoteRegionsToFetch;
+    /**
+     * 获取哪些区域( Region )集合的注册信息
+     */
     private final AtomicReference<String[]> remoteRegionsRef;
     private final InstanceRegionChecker instanceRegionChecker;
 
@@ -172,9 +199,21 @@ public class DiscoveryClient implements EurekaClient {
     private InstanceInfoReplicator instanceInfoReplicator;
 
     private volatile int registrySize = 0;
+    /**
+     * 最后成功从 Eureka-Server 拉取注册信息时间戳
+     */
     private volatile long lastSuccessfulRegistryFetchTimestamp = -1;
+    /**
+     * 最后成功向 Eureka-Server 心跳时间戳
+     */
     private volatile long lastSuccessfulHeartbeatTimestamp = -1;
+    /**
+     * 心跳监控
+     */
     private final ThresholdLevelsMetric heartbeatStalenessMonitor;
+    /**
+     * 拉取监控
+     */
     private final ThresholdLevelsMetric registryStalenessMonitor;
 
     private final AtomicBoolean isShutdown = new AtomicBoolean(false);
@@ -182,6 +221,9 @@ public class DiscoveryClient implements EurekaClient {
     protected final EurekaClientConfig clientConfig;
     protected final EurekaTransportConfig transportConfig;
 
+    /**
+     * 初始化完成时间戳
+     */
     private final long initTimestampMs;
 
     private static final class EurekaTransport {
@@ -1542,6 +1584,7 @@ public class DiscoveryClient implements EurekaClient {
     /**
      * Fetch the registry information from back up registry if all eureka server
      * urls are unreachable.
+     * 若初始拉取注册信息失败，从备份注册中心获取
      */
     private void fetchRegistryFromBackup() {
         try {
