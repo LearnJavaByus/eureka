@@ -4,6 +4,8 @@ package com.netflix.appinfo;
  * constants pertaining to property based instance configs
  *
  * @author David Liu
+ *
+ * 配置文件的每个属性 KEY 。
  */
 final class PropertyBasedInstanceConfigConstants {
 
@@ -11,6 +13,9 @@ final class PropertyBasedInstanceConfigConstants {
     static final String INSTANCE_ID_KEY = "instanceId";
     static final String APP_NAME_KEY = "name";
     static final String APP_GROUP_KEY = "appGroup";
+    /**
+     * 私有静态变量，实际得使用 NETFLIX_APP_GROUP
+     */
     static final String FALLBACK_APP_GROUP_KEY = "NETFLIX_APP_GROUP";
     static final String ASG_NAME_KEY = "asgName";
 

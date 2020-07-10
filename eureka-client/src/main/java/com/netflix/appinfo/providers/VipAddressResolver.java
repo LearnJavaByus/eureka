@@ -2,6 +2,8 @@ package com.netflix.appinfo.providers;
 
 /**
  * This only really exist for legacy support
+ *
+ *  VIP地址解析器
  */
 public interface VipAddressResolver {
 

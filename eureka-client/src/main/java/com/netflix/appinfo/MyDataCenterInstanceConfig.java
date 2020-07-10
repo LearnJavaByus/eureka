@@ -25,6 +25,7 @@ import javax.inject.Singleton;
  *
  * @author Karthik Ranganathan
  *
+ * 非 AWS 数据中心的 Eureka 应用实例配置实现类
  */
 @Singleton
 @ProvidedBy(MyDataCenterInstanceConfigProvider.class)

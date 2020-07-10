@@ -50,6 +50,8 @@ import com.netflix.discovery.shared.transport.EurekaTransportConfig;
  *
  * @author Karthik Ranganathan
  *
+ * 重在 Eureka-Client，例如， 连接的 Eureka-Server 的地址、获取服务提供者列表的频率、注册自身为服务提供者的频率等等。
+ *
  */
 @ImplementedBy(DefaultEurekaClientConfig.class)
 public interface EurekaClientConfig {
