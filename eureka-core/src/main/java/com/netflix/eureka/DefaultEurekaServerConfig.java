@@ -58,6 +58,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Karthik Ranganathan
  *
+ * 基于配置文件的 Eureka-Server 配置实现类
  */
 @Singleton
 public class DefaultEurekaServerConfig implements EurekaServerConfig {
@@ -66,6 +67,9 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     private static final String EUREKA_ENVIRONMENT = "eureka.environment";
     private static final Logger logger = LoggerFactory
             .getLogger(DefaultEurekaServerConfig.class);
+    /**
+     * 配置文件对象
+     */
     private static final DynamicPropertyFactory configInstance = com.netflix.config.DynamicPropertyFactory
             .getInstance();
     /**
@@ -76,6 +80,9 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
                     "eureka-server");
     private static final int TIME_TO_WAIT_FOR_REPLICATION = 30000;
 
+    /**
+     * 命名空间
+     */
     private String namespace = "eureka.";
 
     // These counters are checked for each HTTP request. Instantiating them per request like for the other
@@ -96,7 +103,9 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     }
 
     public DefaultEurekaServerConfig(String namespace) {
+        // 设置 namespace，为 "." 结尾
         this.namespace = namespace;
+        // 初始化 配置文件对象
         init();
     }
 
@@ -104,6 +113,7 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
      * 完成eureka-server.properties文件中的配置项的加载
      */
     private void init() {
+        // 初始化 配置文件对象
         String env = ConfigurationManager.getConfigInstance().getString(
                 EUREKA_ENVIRONMENT, TEST);
         ConfigurationManager.getConfigInstance().setProperty(

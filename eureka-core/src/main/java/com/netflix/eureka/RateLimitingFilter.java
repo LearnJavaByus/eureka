@@ -83,6 +83,8 @@ import org.slf4j.LoggerFactory;
  * </ul>
  *
  * @author Tomasz Bak
+ *
+ * 请求限流过滤器
  */
 @Singleton
 public class RateLimitingFilter implements Filter {

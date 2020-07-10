@@ -23,6 +23,8 @@ import com.netflix.eureka.resources.ServerCodecs;
 
 /**
  * @author David Liu
+ *
+ * 提供Eureka-Server 内部各组件对象的初始化、关闭、获取等方法。
  */
 public interface EurekaServerContext {
 

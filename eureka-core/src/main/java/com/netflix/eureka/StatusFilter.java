@@ -33,6 +33,8 @@ import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 /**
  * Filter to check whether the eureka server is ready to take requests based on
  * its {@link InstanceStatus}.
+ *
+ * Eureka-Server 状态过滤器
  */
 @Singleton
 public class StatusFilter implements Filter {

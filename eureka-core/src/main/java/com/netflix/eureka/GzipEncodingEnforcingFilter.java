@@ -24,6 +24,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * non-compressed replies will be dropped altogether, so this filter will become required.
  *
  * @author Tomasz Bak
+ *
+ * GZIP 编码过滤器
  */
 @Singleton
 public class GzipEncodingEnforcingFilter implements Filter {

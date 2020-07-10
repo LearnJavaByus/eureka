@@ -10,24 +10,29 @@
   </listener>
 
   <filter>
+<!--    Eureka-Server 状态过滤器-->
     <filter-name>statusFilter</filter-name>
     <filter-class>com.netflix.eureka.StatusFilter</filter-class>
   </filter>
 
   <filter>
+<!--    Eureka-Server 请求认证过滤器-->
     <filter-name>requestAuthFilter</filter-name>
     <filter-class>com.netflix.eureka.ServerRequestAuthFilter</filter-class>
   </filter>
   <filter>
+<!--    请求限流过滤器-->
     <filter-name>rateLimitingFilter</filter-name>
     <filter-class>com.netflix.eureka.RateLimitingFilter</filter-class>
   </filter>
   <filter>
+<!--    GZIP 编码过滤器-->
     <filter-name>gzipEncodingEnforcingFilter</filter-name>
     <filter-class>com.netflix.eureka.GzipEncodingEnforcingFilter</filter-class>
   </filter>
 
   <filter>
+    <!--    jersey MVC 请求过滤器-->
     <filter-name>jersey</filter-name>
     <filter-class>com.sun.jersey.spi.container.servlet.ServletContainer</filter-class>
     <init-param>
