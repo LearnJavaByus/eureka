@@ -127,6 +127,8 @@ public class Lease<T> {
      * not be fixed.
      *
      * @param additionalLeaseMs any additional lease time to add to the lease evaluation in ms.
+     *
+     *  判断租约是否过期
      */
     public boolean isExpired(long additionalLeaseMs) {
         // lastUpdateTimestamp renew成功后就会刷新这个时间，可以理解为最近一次活跃时间
