@@ -109,8 +109,13 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      * value ：字符串 = 应用名(应用实例信息编号)
      */
     private final CircularQueue<Pair<Long, String>> recentRegisteredQueue;
+    /**
+     * 最近取消注册的调试队列
+     * key ：添加时的时间戳
+     * value ：字符串 = 应用名(应用实例信息编号)
+     */
     private final CircularQueue<Pair<Long, String>> recentCanceledQueue;
-    // 最近租约变更记录队列
+    // 最近租约变更记录队列， 用于注册信息的增量获取
     private ConcurrentLinkedQueue<RecentlyChangedItem> recentlyChangedQueue = new ConcurrentLinkedQueue<RecentlyChangedItem>();
 
     private final ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
@@ -356,29 +361,35 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         try {
             //加上读锁，支持多服务实例下线
             read.lock();
+            // 增加 取消注册次数 到 监控
             CANCEL.increment(isReplication);
-            // 通过appName获取注册表信息
+            // 移除 租约映射
             Map<String, Lease<InstanceInfo>> gMap = registry.get(appName);
             Lease<InstanceInfo> leaseToCancel = null;
             if (gMap != null) {
                 // 通过实例id将注册信息从注册表中移除
                 leaseToCancel = gMap.remove(id);
             }
-            // 最近取消的注册表信息队列添加该注册表信息
+            // 添加到 最近取消注册的调试队列
             synchronized (recentCanceledQueue) {
                 recentCanceledQueue.add(new Pair<Long, String>(System.currentTimeMillis(), appName + "(" + id + ")"));
             }
+            // 移除 应用实例覆盖状态映射
             InstanceStatus instanceStatus = overriddenInstanceStatusMap.remove(id);
             if (instanceStatus != null) {
                 logger.debug("Removed instance id {} from the overridden map which has value {}", id, instanceStatus.name());
             }
+            // 租约不存在
             if (leaseToCancel == null) {
+                // 添加 取消注册不存在 到 监控
                 CANCEL_NOT_FOUND.increment(isReplication);
                 logger.warn("DS: Registry: cancel failed because Lease is not registered for: {}/{}", appName, id);
+                // 失败
                 return false;
             } else {
-                // 执行下线操作的cancel方法
+                // 设置 租约的取消注册时间戳
                 leaseToCancel.cancel();
+                // 添加到 最近租约变更记录队列
                 InstanceInfo instanceInfo = leaseToCancel.getHolder();
                 String vip = null;
                 String svip = null;
@@ -390,12 +401,13 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                     vip = instanceInfo.getVIPAddress();
                     svip = instanceInfo.getSecureVipAddress();
                 }
-                // 使注册表的读写缓存失效
+                // 设置 响应缓存 过期
                 invalidateCache(appName, vip, svip);
                 logger.info("Cancelled instance {}/{} (replication={})", appName, id, isReplication);
                 return true;
             }
         } finally {
+            // 释放锁
             read.unlock();
         }
     }
