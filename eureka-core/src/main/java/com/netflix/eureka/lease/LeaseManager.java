@@ -32,6 +32,8 @@ import com.netflix.eureka.registry.AbstractInstanceRegistry;
  * @author Karthik Ranganathan, Greg Kim
  *
  * @param <T>
+ *
+ *     租约管理器接口，提供租约的注册、续租、取消( 主动下线 )、过期( 过期下线 )
  */
 public interface LeaseManager<T> {
 

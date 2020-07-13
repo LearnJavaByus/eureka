@@ -48,6 +48,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Karthik Ranganathan, Greg Kim
  *
+ * 处理单个应用的请求操作的 Resource ( Controller )。
  */
 @Produces({"application/xml", "application/json"})
 public class ApplicationResource {
@@ -148,6 +149,7 @@ public class ApplicationResource {
                                 @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication) {
         logger.debug("Registering instance {} (replication={})", info.getId(), isReplication);
         // validate that the instanceinfo contains all the necessary required fields
+        // 校验参数是否合法
         if (isBlank(info.getId())) {
             return Response.status(400).entity("Missing instanceId").build();
         } else if (isBlank(info.getHostName())) {
@@ -164,6 +166,7 @@ public class ApplicationResource {
             return Response.status(400).entity("Missing dataCenterInfo Name").build();
         }
 
+        // AWS 相关，跳过
         // handle cases where clients may be registering with bad DataCenterInfo with missing data
         DataCenterInfo dataCenterInfo = info.getDataCenterInfo();
         if (dataCenterInfo instanceof UniqueIdentifier) {
@@ -185,7 +188,9 @@ public class ApplicationResource {
             }
         }
 
+        // 注册应用实例信息
         registry.register(info, "true".equals(isReplication));
+        // 返回 204 成功
         return Response.status(204).build();  // 204 to be backwards compatible
     }
 

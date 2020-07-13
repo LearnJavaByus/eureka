@@ -36,6 +36,8 @@ import javax.inject.Singleton;
  * Override some methods with aws specific use cases.
  *
  * @author David Liu
+ *
+ * 用于亚马逊 AWS
  */
 @Singleton
 public class AwsInstanceRegistry extends PeerAwareInstanceRegistryImpl {

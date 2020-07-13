@@ -38,12 +38,30 @@ public class Lease<T> {
 
     public static final int DEFAULT_DURATION_IN_SECS = 90;
 
+    /**
+     * 实体
+     */
     private T holder;
+    /**
+     * 取消注册时间戳
+     */
     private long evictionTimestamp;
+    /**
+     *  注册时间戳
+     */
     private long registrationTimestamp;
+    /**
+     *  开始服务时间戳
+     */
     private long serviceUpTimestamp;
     // Make it volatile so that the expiration task would see this quicker
+    /**
+     * 最后更新时间戳
+     */
     private volatile long lastUpdateTimestamp;
+    /**
+     * 租约持续时长，单位：毫秒
+     */
     private long duration;
 
     public Lease(T r, int durationInSecs) {
@@ -79,7 +97,7 @@ public class Lease<T> {
      * subsequent calls will be ignored.
      */
     public void serviceUp() {
-        if (serviceUpTimestamp == 0) {
+        if (serviceUpTimestamp == 0) {  // 第一次有效
             serviceUpTimestamp = System.currentTimeMillis();
         }
     }
