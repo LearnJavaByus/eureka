@@ -901,6 +901,8 @@ public class DiscoveryClient implements EurekaClient {
 
     /**
      * Renew with the eureka service by making the appropriate REST call
+     *
+     * 执行续租逻辑
      */
     boolean renew() {
         EurekaHttpResponse<InstanceInfo> httpResponse;
@@ -911,6 +913,7 @@ public class DiscoveryClient implements EurekaClient {
                 REREGISTER_COUNTER.increment();
                 logger.info("{} - Re-registering apps/{}", PREFIX + appPathIdentifier, instanceInfo.getAppName());
                 long timestamp = instanceInfo.setIsDirtyWithTime();
+                // 发起注册
                 boolean success = register();
                 if (success) {
                     instanceInfo.unsetIsDirty(timestamp);
@@ -1331,7 +1334,7 @@ public class DiscoveryClient implements EurekaClient {
         // 抓取注册表的定时任务，
         if (clientConfig.shouldFetchRegistry()) {
             // registry cache refresh timer // registryFetchIntervalSeconds默认为30s
-            int registryFetchIntervalSeconds = clientConfig.getRegistryFetchIntervalSeconds();
+            int registryFetchIntervalSeconds = clientConfig.getRegistryFetchIntervalSeconds();// 续租频率
             int expBackOffBound = clientConfig.getCacheRefreshExecutorExponentialBackOffBound();
             // 执行cacheRefreshExecutor调度任务，默认是30s
             scheduler.schedule(
@@ -1491,6 +1494,8 @@ public class DiscoveryClient implements EurekaClient {
 
     /**
      * The heartbeat task that renews the lease in the given intervals.
+     *
+     * 心跳线程，实现执行 Eureka-Client 向 Eureka-Server 发起续租( renew )请求
      */
     private class HeartbeatThread implements Runnable {
 

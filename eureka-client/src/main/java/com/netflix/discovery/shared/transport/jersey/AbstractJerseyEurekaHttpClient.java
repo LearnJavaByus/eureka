@@ -90,8 +90,17 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
         }
     }
 
+    /**
+     * 发起续租请求
+     * @param appName
+     * @param id
+     * @param info
+     * @param overriddenStatus
+     * @return
+     */
     @Override
     public EurekaHttpResponse<InstanceInfo> sendHeartBeat(String appName, String id, InstanceInfo info, InstanceStatus overriddenStatus) {
+        // 路径 apps/${APP_NAME}/${INSTANCE_INFO_ID}
         String urlPath = "apps/" + appName + '/' + id;
         ClientResponse response = null;
         try {

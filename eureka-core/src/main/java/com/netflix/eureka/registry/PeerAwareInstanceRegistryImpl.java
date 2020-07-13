@@ -441,7 +441,9 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
      * java.lang.String, long, boolean)
      */
     public boolean renew(final String appName, final String id, final boolean isReplication) {
+        // 续租
         if (super.renew(appName, id, isReplication)) {
+            // Eureka-Server 复制
             replicateToPeers(Action.Heartbeat, appName, id, null, null, isReplication);
             return true;
         }

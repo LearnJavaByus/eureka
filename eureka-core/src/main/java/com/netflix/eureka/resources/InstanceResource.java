@@ -48,6 +48,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Karthik Ranganathan, Greg Kim
  *
+ *处理单个应用实例信息的请求操作的 Resource ( Controller )。
  */
 @Produces({"application/xml", "application/json"})
 public class InstanceResource {
@@ -103,6 +104,8 @@ public class InstanceResource {
      *         failure.
      *
      *  参与server端接收心跳检查请求、下线  ，基于@PUT接收
+     *
+     *  续租应用实例信息的请求
      */
     @PUT
     public Response renewLease(
@@ -111,13 +114,17 @@ public class InstanceResource {
             @QueryParam("status") String status,
             @QueryParam("lastDirtyTimestamp") String lastDirtyTimestamp) {
         boolean isFromReplicaNode = "true".equals(isReplication);
+        // 续租
         boolean isSuccess = registry.renew(app.getName(), id, isFromReplicaNode);
 
         // Not found in the registry, immediately ask for a register
+        // 续租失败
         if (!isSuccess) {
             logger.warn("Not Found (Renew): {} - {}", app.getName(), id);
             return Response.status(Status.NOT_FOUND).build();
         }
+
+        // 比较 InstanceInfo 的 lastDirtyTimestamp 属性
         // Check if we need to sync based on dirty time stamp, the client
         // instance might have changed some value
         Response response = null;
@@ -131,6 +138,7 @@ public class InstanceResource {
                 registry.storeOverriddenStatusIfRequired(app.getAppName(), id, InstanceStatus.valueOf(overriddenStatus));
             }
         } else {
+            // 成功
             response = Response.ok().build();
         }
         logger.debug("Found (Renew): {} - {}; reply status={}" + app.getName(), id, response.getStatus());
@@ -295,19 +303,28 @@ public class InstanceResource {
         }
     }
 
+    /**
+     * 比较 lastDirtyTimestamp 的差异
+     * @param lastDirtyTimestamp
+     * @param isReplication
+     * @return
+     */
     private Response validateDirtyTimestamp(Long lastDirtyTimestamp,
                                             boolean isReplication) {
+        // 获取 InstanceInfo
         InstanceInfo appInfo = registry.getInstanceByAppAndId(app.getName(), id, false);
         if (appInfo != null) {
             if ((lastDirtyTimestamp != null) && (!lastDirtyTimestamp.equals(appInfo.getLastDirtyTimestamp()))) {
                 Object[] args = {id, appInfo.getLastDirtyTimestamp(), lastDirtyTimestamp, isReplication};
 
+                // 请求 的 较大
                 if (lastDirtyTimestamp > appInfo.getLastDirtyTimestamp()) {
                     logger.debug(
                             "Time to sync, since the last dirty timestamp differs -"
                                     + " ReplicationInstance id : {},Registry : {} Incoming: {} Replication: {}",
                             args);
                     return Response.status(Status.NOT_FOUND).build();
+                    // Server 的 较大
                 } else if (appInfo.getLastDirtyTimestamp() > lastDirtyTimestamp) {
                     // In the case of replication, send the current instance info in the registry for the
                     // replicating node to sync itself with this one.

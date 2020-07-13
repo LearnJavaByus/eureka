@@ -120,6 +120,12 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
     private Timer deltaRetentionTimer = new Timer("Eureka-DeltaRetentionTimer", true);
     private Timer evictionTimer = new Timer("Eureka-EvictionTimer", true);
+    /**
+     * 用途：
+     * 配合 Netflix Servo 实现监控信息采集续租每分钟次数。
+     * Eureka-Server 运维界面的显示续租每分钟次数。
+     * 自我保护机制
+     */
     private final MeasuredRate renewsLastMin;
 
     private final AtomicReference<EvictionTask> evictionTaskRef = new AtomicReference<EvictionTask>();
@@ -403,13 +409,15 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      * 参与server端接收心跳检查请求  ，基于@PUT接收
      */
     public boolean renew(String appName, String id, boolean isReplication) {
+        // 增加 续租次数 到 监控
         RENEW.increment(isReplication);
-        //通过appName获取对应的服务注册表信息
+        // 获得 租约 ( Lease )
         Map<String, Lease<InstanceInfo>> gMap = registry.get(appName);
         Lease<InstanceInfo> leaseToRenew = null;
         if (gMap != null) {
             leaseToRenew = gMap.get(id);
         }
+        // 租约不存在
         if (leaseToRenew == null) {
             RENEW_NOT_FOUND.increment(isReplication);
             logger.warn("DS: Registry: lease doesn't exist, registering resource: {} - {}", appName, id);
@@ -418,6 +426,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             InstanceInfo instanceInfo = leaseToRenew.getHolder();
             if (instanceInfo != null) {
                 // touchASGCache(instanceInfo.getASGName());
+                // 获得应用实例的最终状态
                 InstanceStatus overriddenInstanceStatus = this.getOverriddenInstanceStatus(
                         instanceInfo, leaseToRenew, isReplication);
                 if (overriddenInstanceStatus == InstanceStatus.UNKNOWN) {
@@ -438,8 +447,10 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                     instanceInfo.setStatusWithoutDirty(overriddenInstanceStatus);
                 }
             }
+            // 新增 续租每分钟次数
             renewsLastMin.increment();
             //设置当前示例注册表的renew属性的lastUpdateTimestamp 为最新时间+duration
+            // 设置 租约最后更新时间（续租）
             leaseToRenew.renew();
             return true;
         }
