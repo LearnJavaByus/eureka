@@ -537,6 +537,8 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
      * </p>
      *
      * @return true if the self-preservation mode is enabled, false otherwise.
+     *
+     *  !this.isSelfPreservationModeEnabled() ：当未开启自我保护机制时，每次都进行重新计算。
      */
     @Override
     public boolean isSelfPreservationModeEnabled() {
@@ -557,7 +559,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
      */
     private void updateRenewalThreshold() {
         try {
-            // count为注册表中服务实例的个数
+            // count为注册表中服务实例的个数 ，// 计算 应用实例数
             // 将自己作为eureka client，从其他eureka server拉取注册表
             // 合并到自己本地去 将从别的eureka server拉取到的服务实例的数量作为count
             //getApplications()从别的注册中心获取注册表实例信息，因为一个eurekaServer对于其他注册中心来说也是一个eurekaClient。
@@ -570,12 +572,17 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                     }
                 }
             }
+            // 计算 expectedNumberOfRenewsPerMin 、 numberOfRenewsPerMinThreshold 参数
             synchronized (lock) {
                 // Update threshold only if the threshold is greater than the
                 // current expected threshold of if the self preservation is disabled.
                 // 这里也是存在bug的，master分支已经修复
                 // 一分钟服务实例心跳个数(其他eureka server拉取的服务实例个数 * 2) > 自己本身一分钟所有服务实例实际心跳次数 * 0.85(阈值)
                 // 这里主要是跟其他的eureka server去做一下同步
+                /**
+                 * (count * 2) > (serverConfig.getRenewalPercentThreshold() * numberOfRenewsPerMinThreshold)
+                 * 当开启自我保护机制时，应用实例每分钟最大心跳数( count * 2 ) 小于期望最小每分钟续租次数( serverConfig.getRenewalPercentThreshold() * numberOfRenewsPerMinThreshold )，不重新计算
+                 */
                 if ((count * 2) > (serverConfig.getRenewalPercentThreshold() * numberOfRenewsPerMinThreshold)
                         || (!this.isSelfPreservationModeEnabled())) {
                     this.expectedNumberOfRenewsPerMin = count * 2;

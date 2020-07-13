@@ -121,6 +121,13 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     private final ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     private final Lock read = readWriteLock.readLock();
     private final Lock write = readWriteLock.writeLock();
+    /**
+     * 自我保护机锁
+     *
+     * 当计算如下参数时使用：
+     *  1. {@link #numberOfRenewsPerMinThreshold}
+     *  2. {@link #expectedNumberOfRenewsPerMin}
+     */
     protected final Object lock = new Object();
 
     private Timer deltaRetentionTimer = new Timer("Eureka-DeltaRetentionTimer", true);
@@ -136,9 +143,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     private final AtomicReference<EvictionTask> evictionTaskRef = new AtomicReference<EvictionTask>();
 
     protected String[] allKnownRemoteRegions = EMPTY_STR_ARRAY;
-    // 代表每分钟期待的心跳次数乘以默认的心跳配比85%得到
+    // 代表每分钟期待的心跳次数乘以默认的心跳配比85%得到 ，既是 期望最小每分钟续租次数
     protected volatile int numberOfRenewsPerMinThreshold;
-    //代表每分钟期待的心跳时间或期待的一分钟注册中心接收到的总心跳时间
+    //代表每分钟期待的心跳时间或期待的一分钟注册中心接收到的总心跳时间，既是 期望最大每分钟续租次数
     protected volatile int expectedNumberOfRenewsPerMin;
 
     protected final EurekaServerConfig serverConfig;
@@ -672,6 +679,13 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         evict(0l);
     }
 
+    /**
+     * 当每分钟心跳次数( renewsLastMin ) 小于 numberOfRenewsPerMinThreshold 时，
+     * 并且开启自动保护模式开关( eureka.enableSelfPreservation = true ) 时，
+     * 触发自动保护机制，不再自动过期租约，
+     *
+     * @param additionalLeaseMs
+     */
     public void evict(long additionalLeaseMs) {
         logger.debug("Running the evict task");
 
