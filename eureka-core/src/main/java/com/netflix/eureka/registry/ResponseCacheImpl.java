@@ -72,6 +72,11 @@ import org.slf4j.LoggerFactory;
  * </p>
  *
  * @author Karthik Ranganathan, Greg Kim
+ *
+ * 响应缓存实现类
+ *
+ *   只读缓存( readOnlyCacheMap )
+ *   固定过期 + 固定大小的读写缓存( readWriteCacheMap )
  */
 public class ResponseCacheImpl implements ResponseCache {
 
@@ -128,7 +133,7 @@ public class ResponseCacheImpl implements ResponseCache {
 
         long responseCacheUpdateIntervalMs = serverConfig.getResponseCacheUpdateIntervalMs();
         this.readWriteCacheMap =
-                CacheBuilder.newBuilder().initialCapacity(1000)
+                CacheBuilder.newBuilder().initialCapacity(1000) // 最大缓存数量为 1000
                         .expireAfterWrite(serverConfig.getResponseCacheAutoExpirationInSeconds(), TimeUnit.SECONDS)
                         .removalListener(new RemovalListener<Key, Value>() {
                             @Override
@@ -147,11 +152,13 @@ public class ResponseCacheImpl implements ResponseCache {
                                     Key cloneWithNoRegions = key.cloneWithoutRegions();
                                     regionSpecificKeys.put(cloneWithNoRegions, key);
                                 }
+                                //生成缓存值
                                 Value value = generatePayload(key);
                                 return value;
                             }
                         });
 
+        // 初始化定时任务。配置 eureka.responseCacheUpdateIntervalMs，设置任务执行频率，默认值 ：30 * 1000 毫秒。
         if (shouldUseReadOnlyResponseCache) {
             timer.schedule(getCacheUpdateTask(),
                     new Date(((System.currentTimeMillis() / responseCacheUpdateIntervalMs) * responseCacheUpdateIntervalMs)
@@ -171,7 +178,7 @@ public class ResponseCacheImpl implements ResponseCache {
             @Override
             public void run() {
                 logger.debug("Updating the client cache from response cache");
-                for (Key key : readOnlyCacheMap.keySet()) {
+                for (Key key : readOnlyCacheMap.keySet()) { // 循环 readOnlyCacheMap 的缓存键
                     if (logger.isDebugEnabled()) {
                         Object[] args = {key.getEntityType(), key.getName(), key.getVersion(), key.getType()};
                         logger.debug("Updating the client cache from response cache for key : {} {} {} {}", args);
@@ -180,7 +187,7 @@ public class ResponseCacheImpl implements ResponseCache {
                         CurrentRequestVersion.set(key.getVersion());
                         Value cacheValue = readWriteCacheMap.get(key);
                         Value currentCacheValue = readOnlyCacheMap.get(key);
-                        if (cacheValue != currentCacheValue) {
+                        if (cacheValue != currentCacheValue) { // 不一致时，进行替换
                             readOnlyCacheMap.put(key, cacheValue);
                         }
                     } catch (Throwable th) {
@@ -238,6 +245,8 @@ public class ResponseCacheImpl implements ResponseCache {
      * Invalidate the cache of a particular application.
      *
      * @param appName the application name of the application.
+     *
+     *   主动过期读写缓存
      */
     @Override
     public void invalidate(String appName, @Nullable String vipAddress, @Nullable String secureVipAddress) {
@@ -270,7 +279,7 @@ public class ResponseCacheImpl implements ResponseCache {
         for (Key key : keys) {
             logger.debug("Invalidating the response cache key : {} {} {} {}, {}",
                     key.getEntityType(), key.getName(), key.getVersion(), key.getType(), key.getEurekaAccept());
-
+            //过期读写缓存
             readWriteCacheMap.invalidate(key);
             Collection<Key> keysWithRegions = regionSpecificKeys.get(key);
             if (null != keysWithRegions && !keysWithRegions.isEmpty()) {
@@ -346,17 +355,21 @@ public class ResponseCacheImpl implements ResponseCache {
     Value getValue(final Key key, boolean useReadOnlyCache) {
         Value payload = null;
         try {
+            // 只读标志
             if (useReadOnlyCache) {
+                // 从只读缓存获取数据
                 final Value currentPayload = readOnlyCacheMap.get(key);
                 if (currentPayload != null) {
+                    // 存在，赋值返回
                     payload = currentPayload;
                 } else {
+                    // 不存在，则从读写缓存中获取
                     payload = readWriteCacheMap.get(key);
-                    //只读缓存
+                    //获取到数据，赋值到只读缓存中
                     readOnlyCacheMap.put(key, payload);
                 }
             } else {
-                //读写缓存
+                //从读写缓存中获取数据
                 payload = readWriteCacheMap.get(key);
             }
         } catch (Throwable t) {
@@ -369,9 +382,11 @@ public class ResponseCacheImpl implements ResponseCache {
      * Generate pay load with both JSON and XML formats for all applications.
      */
     private String getPayLoad(Key key, Applications apps) {
+        // 获得编码器
         EncoderWrapper encoderWrapper = serverCodecs.getEncoder(key.getType(), key.getEurekaAccept());
         String result;
         try {
+            // 编码
             result = encoderWrapper.encode(apps);
         } catch (Exception e) {
             logger.error("Failed to encode the payload for all apps", e);
@@ -416,10 +431,12 @@ public class ResponseCacheImpl implements ResponseCache {
                             tracer = serializeAllAppsWithRemoteRegionTimer.start();
                             payload = getPayLoad(key, registry.getApplicationsFromMultipleRegions(key.getRegions()));
                         } else {
+                            //获得注册的应用集合。后调用 #getPayLoad() 方法，将注册的应用集合转换成缓存值。
                             tracer = serializeAllAppsTimer.start();
                             payload = getPayLoad(key, registry.getApplications());
                         }
                     } else if (ALL_APPS_DELTA.equals(key.getName())) {
+                        //获取增量注册信息的缓存值
                         if (isRemoteRegionRequested) {
                             tracer = serializeDeltaAppsWithRemoteRegionTimer.start();
                             versionDeltaWithRegions.incrementAndGet();
@@ -502,7 +519,13 @@ public class ResponseCacheImpl implements ResponseCache {
      *
      */
     public class Value {
+        /**
+         * 原始值
+         */
         private final String payload;
+        /**
+         * GZIP 压缩后的值
+         */
         private byte[] gzipped;
 
         public Value(String payload) {

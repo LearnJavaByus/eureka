@@ -212,6 +212,7 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
             }
             Builder requestBuilder = webResource.getRequestBuilder();
             addExtraHeaders(requestBuilder);
+            // GET请求，实现全量获取注册信息。
             response = requestBuilder.accept(MediaType.APPLICATION_JSON_TYPE).get(ClientResponse.class);
 
             Applications applications = null;

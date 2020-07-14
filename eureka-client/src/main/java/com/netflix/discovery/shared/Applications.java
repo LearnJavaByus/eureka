@@ -61,6 +61,8 @@ import org.slf4j.LoggerFactory;
  *
  * @author Karthik Ranganathan
  *
+ * 注册的应用集合
+ *
  */
 @Serializer("com.netflix.discovery.converters.EntityBodyConverter")
 @XStreamAlias("applications")
@@ -72,9 +74,16 @@ public class Applications {
 
     private Long versionDelta = Long.valueOf(-1);
 
+    /**
+     * 应用队列
+     */
     @XStreamImplicit
     private AbstractQueue<Application> applications;
 
+    /**
+     * 应用映射
+     * key：应用名
+     */
     private Map<String, Application> appNameApplicationMap = new ConcurrentHashMap<String, Application>();
     private Map<String, AbstractQueue<InstanceInfo>> virtualHostNameAppMap = new ConcurrentHashMap<String, AbstractQueue<InstanceInfo>>();
     private Map<String, AbstractQueue<InstanceInfo>> secureVirtualHostNameAppMap = new ConcurrentHashMap<String, AbstractQueue<InstanceInfo>>();
@@ -84,6 +93,9 @@ public class Applications {
     private Map<String, AtomicReference<List<InstanceInfo>>> shuffleVirtualHostNameMap = new ConcurrentHashMap<String, AtomicReference<List<InstanceInfo>>>();
     private Map<String, AtomicReference<List<InstanceInfo>>> shuffledSecureVirtualHostNameMap = new ConcurrentHashMap<String, AtomicReference<List<InstanceInfo>>>();
 
+    /**
+     * 应用集合信息 hashcode
+     */
     private String appsHashCode;
 
     /**

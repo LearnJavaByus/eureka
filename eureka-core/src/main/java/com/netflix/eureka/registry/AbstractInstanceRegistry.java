@@ -792,6 +792,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      * @return the list of all known applications
      *
      * @see com.netflix.discovery.shared.LookupService#getApplications()
+     *
+     * 获得注册的应用集合
      */
     public Applications getApplications() {
         boolean disableTransparentFallback = serverConfig.disableTransparentFallbackToOtherRegion();
@@ -848,7 +850,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         } else {
             GET_ALL_CACHE_MISS.increment();
         }
-        // 存放服务实例
+        // 获得获得注册的应用集合
         Applications apps = new Applications();
         apps.setVersion(1L);
         for (Entry<String, Map<String, Lease<InstanceInfo>>> entry : registry.entrySet()) {
@@ -896,6 +898,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 }
             }
         }
+        // 设置 应用集合 hashcode,该变量用于校验增量获取的注册信息和 Eureka-Server 全量的注册信息是否一致( 完整 )
         apps.setAppsHashCode(apps.getReconcileHashCode());
         return apps;
     }
@@ -977,6 +980,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     public Applications getApplicationDeltas() {
         GET_ALL_CACHE_MISS_DELTA.increment();
         Applications apps = new Applications();
+
+        // 唯一调用到 ResponseCache#getVersionDelta() 方法的地方
         apps.setVersion(responseCache.getVersionDelta().get());
         Map<String, Application> applicationInstancesMap = new HashMap<String, Application>();
         try {
