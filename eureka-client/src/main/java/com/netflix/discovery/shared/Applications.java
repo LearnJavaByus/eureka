@@ -258,8 +258,11 @@ public class Applications {
      */
     @JsonIgnore
     public String getReconcileHashCode() {
+        // 计数集合 key：应用实例状态
         TreeMap<String, AtomicInteger> instanceCountMap = new TreeMap<String, AtomicInteger>();
+        //计算每个应用实例状态的数量
         populateInstanceCountMap(instanceCountMap);
+        // 计算 hashcode
         return getReconcileHashCode(instanceCountMap);
     }
 
@@ -271,6 +274,7 @@ public class Applications {
     public void populateInstanceCountMap(TreeMap<String, AtomicInteger> instanceCountMap) {
         for (Application app : this.getRegisteredApplications()) {
             for (InstanceInfo info : app.getInstancesAsIsFromEureka()) {
+                // 计数
                 AtomicInteger instanceCount = instanceCountMap.get(info.getStatus().name());
                 if (instanceCount == null) {
                     instanceCount = new AtomicInteger(0);
