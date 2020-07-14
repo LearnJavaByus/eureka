@@ -134,6 +134,9 @@ public class InstanceInfo {
     private volatile DataCenterInfo dataCenterInfo;
     private volatile String hostName;
     private volatile InstanceStatus status = InstanceStatus.UP;
+    /**
+     * 覆盖状态
+     */
     private volatile InstanceStatus overriddenstatus = InstanceStatus.UNKNOWN;
     @XStreamOmitField
     private volatile boolean isInstanceInfoDirty = false;

@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory;
  * This rule matches if we have an existing lease for the instance that is UP or OUT_OF_SERVICE.
  *
  * Created by Nikos Michalakis on 7/13/16.
+ *
+ * 匹配已存在租约的应用实例的 nstanceStatus.OUT_OF_SERVICE 或者 InstanceInfo.InstanceStatus.UP 状态。
  */
 public class LeaseExistsRule implements InstanceStatusOverrideRule {
 
@@ -21,6 +23,7 @@ public class LeaseExistsRule implements InstanceStatusOverrideRule {
         // This is for backward compatibility until all applications have ASG
         // names, otherwise while starting up
         // the client status may override status replicated from other servers
+        // 非 Eureka-Server 请求
         if (!isReplication) {
             InstanceInfo.InstanceStatus existingStatus = null;
             if (existingLease != null) {
