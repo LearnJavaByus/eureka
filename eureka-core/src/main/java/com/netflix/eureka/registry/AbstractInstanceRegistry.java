@@ -139,7 +139,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      * 自我保护机制
      */
     private final MeasuredRate renewsLastMin;
-
+    /**
+     * 清理租约过期任务
+     */
     private final AtomicReference<EvictionTask> evictionTaskRef = new AtomicReference<EvictionTask>();
 
     protected String[] allKnownRemoteRegions = EMPTY_STR_ARRAY;
@@ -695,6 +697,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             return;
         }
 
+        // 获得 所有过期的租约
         // We collect first all expired items, to evict them in random order. For large eviction sets,
         // if we do not that, we might wipe out whole apps before self preservation kicks in. By randomizing it,
         // the impact should be evenly distributed across all applications.
@@ -704,23 +707,25 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             if (leaseMap != null) {
                 for (Entry<String, Lease<InstanceInfo>> leaseEntry : leaseMap.entrySet()) {
                     Lease<InstanceInfo> lease = leaseEntry.getValue();
-                    if (lease.isExpired(additionalLeaseMs) && lease.getHolder() != null) {
+                    if (lease.isExpired(additionalLeaseMs) && lease.getHolder() != null) { // 过期
                         expiredLeases.add(lease);
                     }
                 }
             }
         }
 
+        // 计算 最大允许清理租约数量
         // To compensate for GC pauses or drifting local time, we need to use current registry size as a base for
         // triggering self-preservation. Without that we would wipe out full registry.
         int registrySize = (int) getLocalRegistrySize();
         int registrySizeThreshold = (int) (registrySize * serverConfig.getRenewalPercentThreshold());
         int evictionLimit = registrySize - registrySizeThreshold;
 
+        // 计算 清理租约数量
         int toEvict = Math.min(expiredLeases.size(), evictionLimit);
         if (toEvict > 0) {
             logger.info("Evicting {} items (expired={}, evictionLimit={})", toEvict, expiredLeases.size(), evictionLimit);
-
+            // 逐个过期
             Random random = new Random(System.currentTimeMillis());
             for (int i = 0; i < toEvict; i++) {
                 // Pick a random item (Knuth shuffle algorithm)
@@ -1331,6 +1336,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
     protected void postInit() {
         renewsLastMin.start();
+        // 初始化 清理租约过期任务
         if (evictionTaskRef.get() != null) {
             evictionTaskRef.get().cancel();
         }
@@ -1357,6 +1363,9 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
     /* visible for testing */ class EvictionTask extends TimerTask {
 
+        /**
+         * 最后任务执行时间
+         */
         private final AtomicLong lastExecutionNanosRef = new AtomicLong(0l);
 
         @Override
@@ -1365,6 +1374,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 // 获取补偿时间 可能大于0
                 long compensationTimeMs = getCompensationTimeMs();
                 logger.info("Running the evict task with compensationTime {}ms", compensationTimeMs);
+                // 清理过期租约逻辑
                 evict(compensationTimeMs);
             } catch (Throwable e) {
                 logger.error("Could not run the evict task", e);
@@ -1380,7 +1390,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         long getCompensationTimeMs() {
             // 第一次进来先获取当前时间 currNanos=20:00:00
             // 第二次过来，此时currNanos=20:01:00
-            // 第三次过来，currNanos=20:03:00才过来，本该60s调度一次的，由于fullGC或者其他原因，到了这个时间点没执行
+            // 第三次过来，currNanos=20:03:00才过来，本该60s调度一次的，由于fullGC或者其他原因，到了这个时间点没执行,略有延迟
             long currNanos = getCurrentTimeNano();
 
             // 获取上一次这个EvictionTask执行的时间 getAndSet ：以原子方式设置为给定值，并返回以前的值
@@ -1391,6 +1401,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             if (lastNanos == 0l) {
                 return 0l;
             }
+
+            //计算公式 = 当前时间 - 最后任务执行时间 - 任务执行频率。
 
             // 第二次进来，计算elapsedMs = 60s
             // 第三次进来，计算elapsedMs = 120s
