@@ -566,7 +566,7 @@ public class DiscoveryClient implements EurekaClient {
                 }
             }
         };
-
+        // 创建 EndPoint 解析器
         eurekaTransport.bootstrapResolver = EurekaHttpClients.newBootstrapResolver(
                 clientConfig,
                 transportConfig,

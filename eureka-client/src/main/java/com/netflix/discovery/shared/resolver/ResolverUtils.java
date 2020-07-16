@@ -86,10 +86,14 @@ public final class ResolverUtils {
      * @return a copy of the original list with elements in the random order
      */
     public static <T extends EurekaEndpoint> List<T> randomize(List<T> list) {
+        // 数组大小为 0 或者 1 ，不进行打乱
         List<T> randomList = new ArrayList<>(list);
         if (randomList.size() < 2) {
             return randomList;
         }
+        // 以本地IP为随机种子，有如下好处：
+        // 多个主机，实现对同一个 EndPoint 集群负载均衡的效果。
+        // 单个主机，同一个 EndPoint 集群按照固定顺序访问。Eureka-Server 不是强一致性的注册中心，Eureka-Client 对同一个 Eureka-Server 拉取注册信息，保证两者之间增量同步的一致性
         Random random = new Random(LOCAL_IPV4_ADDRESS.hashCode());
         int last = randomList.size() - 1;
         for (int i = 0; i < last; i++) {

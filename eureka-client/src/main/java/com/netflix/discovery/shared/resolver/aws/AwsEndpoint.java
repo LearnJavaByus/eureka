@@ -8,10 +8,18 @@ import java.util.List;
 
 /**
  * @author David Liu
+ *
+ * 基于 region、zone 的 Eureka 服务端点实现类 ( 请不要在意 AWS 开头 )
  */
 public class AwsEndpoint extends DefaultEndpoint {
 
+    /**
+     * 区域
+     */
     protected final String zone;
+    /**
+     * 可用区
+     */
     protected final String region;
 
     public AwsEndpoint(String serviceURI, String region, String zone) {

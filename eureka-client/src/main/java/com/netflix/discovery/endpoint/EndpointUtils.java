@@ -216,20 +216,24 @@ public class EndpointUtils {
      */
     public static Map<String, List<String>> getServiceUrlsMapFromConfig(EurekaClientConfig clientConfig, String instanceZone, boolean preferSameZone) {
         Map<String, List<String>> orderedUrls = new LinkedHashMap<>();
+        // 获得 应用实例的 地区( region )
         String region = getRegion(clientConfig);
+        // 获得 应用实例的 可用区
         String[] availZones = clientConfig.getAvailabilityZones(clientConfig.getRegion());
         if (availZones == null || availZones.length == 0) {
             availZones = new String[1];
             availZones[0] = DEFAULT_ZONE;
         }
         logger.debug("The availability zone for the given region {} are {}", region, Arrays.toString(availZones));
+        // 获得 开始位置
         int myZoneOffset = getZoneOffset(instanceZone, preferSameZone, availZones);
-
+        // 将 开始位置 的 serviceUrls 添加到结果
         String zone = availZones[myZoneOffset];
         List<String> serviceUrls = clientConfig.getEurekaServerServiceUrls(zone);
         if (serviceUrls != null) {
             orderedUrls.put(zone, serviceUrls);
         }
+        // 从开始位置顺序遍历剩余的 serviceUrls 添加到结果
         int currentOffset = myZoneOffset == (availZones.length - 1) ? 0 : (myZoneOffset + 1);
         while (currentOffset != myZoneOffset) {
             zone = availZones[currentOffset];
@@ -244,6 +248,7 @@ public class EndpointUtils {
             }
         }
 
+        // 为空，报错
         if (orderedUrls.size() < 1) {
             throw new IllegalArgumentException("DiscoveryClient: invalid serviceUrl specified!");
         }
