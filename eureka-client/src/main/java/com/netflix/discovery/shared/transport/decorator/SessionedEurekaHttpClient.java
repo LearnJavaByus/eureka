@@ -63,6 +63,7 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
     protected <R> EurekaHttpResponse<R> execute(RequestExecutor<R> requestExecutor) {
         long now = System.currentTimeMillis();
         long delay = now - lastReconnectTimeStamp;
+        // 超过 当前会话时间，关闭当前委托的 EurekaHttpClient 。
         if (delay >= currentSessionDurationMs) {
             logger.debug("Ending a session and starting anew");
             lastReconnectTimeStamp = now;
@@ -70,6 +71,7 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
             TransportUtils.shutdown(eurekaHttpClientRef.getAndSet(null));
         }
 
+        // 获得委托的 EurekaHttpClient 。若不存在，则创建新的委托的 EurekaHttpClient 。
         EurekaHttpClient eurekaHttpClient = eurekaHttpClientRef.get();
         if (eurekaHttpClient == null) {
             eurekaHttpClient = TransportUtils.getOrSetAnotherClient(eurekaHttpClientRef, clientFactory.newClient());

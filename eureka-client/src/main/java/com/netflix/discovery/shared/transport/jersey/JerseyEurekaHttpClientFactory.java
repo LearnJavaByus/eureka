@@ -52,6 +52,8 @@ import static com.netflix.discovery.util.DiscoveryBuildInfo.buildVersion;
 
 /**
  * @author Tomasz Bak
+ *
+ * 创建 JerseyApplicationClient 的工厂类
  */
 public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
 
@@ -114,12 +116,13 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
                                                        InstanceInfo myInstanceInfo,
                                                        AbstractEurekaIdentity clientIdentity) {
         JerseyEurekaHttpClientFactoryBuilder clientBuilder = newBuilder()
-                .withAdditionalFilters(additionalFilters)
-                .withMyInstanceInfo(myInstanceInfo)
-                .withUserAgent("Java-EurekaClient")
+                .withAdditionalFilters(additionalFilters) // 客户端附加过滤器
+                .withMyInstanceInfo(myInstanceInfo) // 应用实例
+                .withUserAgent("Java-EurekaClient") // UA
                 .withClientConfig(clientConfig)
                 .withClientIdentity(clientIdentity);
 
+        // 设置 Client Name
         if ("true".equals(System.getProperty("com.netflix.eureka.shouldSSLConnectionsUseSystemSocketFactory"))) {
             clientBuilder.withClientName("DiscoveryClient-HTTPClient-System").withSystemSSLConfiguration();
         } else if (clientConfig.getProxyHost() != null && clientConfig.getProxyPort() != null) {
@@ -146,6 +149,8 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
     /**
      * Currently use EurekaJerseyClientBuilder. Once old transport in DiscoveryClient is removed, incorporate
      * EurekaJerseyClientBuilder here, and remove it.
+     *
+     * 用于创建 JerseyEurekaHttpClientFactory
      */
     public static class JerseyEurekaHttpClientFactoryBuilder extends EurekaClientFactoryBuilder<JerseyEurekaHttpClientFactory, JerseyEurekaHttpClientFactoryBuilder> {
 

@@ -36,25 +36,38 @@ import static com.netflix.discovery.util.DiscoveryBuildInfo.buildVersion;
 public class EurekaJerseyClientImpl implements EurekaJerseyClient {
 
     private static final String PROTOCOL = "https";
+
     private static final String PROTOCOL_SCHEME = "SSL";
+
     private static final int HTTPS_PORT = 443;
     private static final String KEYSTORE_TYPE = "JKS";
 
+    /**
+     * 基于 Apache HttpClient4 实现的 Jersey Client
+     */
     private final ApacheHttpClient4 apacheHttpClient;
+    /**
+     * Apache HttpClient 空闲连接清理器
+     */
     private final ApacheHttpClientConnectionCleaner apacheHttpClientConnectionCleaner;
 
+    /**
+     * Jersey Client 配置
+     */
     ClientConfig jerseyClientConfig;
 
     public EurekaJerseyClientImpl(int connectionTimeout, int readTimeout, final int connectionIdleTimeout,
                                   ClientConfig clientConfig) {
         try {
             jerseyClientConfig = clientConfig;
+            // 创建  ApacheHttpClient
             apacheHttpClient = ApacheHttpClient4.create(jerseyClientConfig);
+            // 设置 连接参数
             HttpParams params = apacheHttpClient.getClientHandler().getHttpClient().getParams();
 
             HttpConnectionParams.setConnectionTimeout(params, connectionTimeout);
             HttpConnectionParams.setSoTimeout(params, readTimeout);
-
+            // 创建 ApacheHttpClientConnectionCleaner
             this.apacheHttpClientConnectionCleaner = new ApacheHttpClientConnectionCleaner(apacheHttpClient, connectionIdleTimeout);
         } catch (Throwable e) {
             throw new RuntimeException("Cannot create Jersey client", e);

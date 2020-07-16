@@ -26,6 +26,8 @@ import java.util.Map;
  * A version of Jersey1 {@link EurekaHttpClient} to be used by applications.
  *
  * @author Tomasz Bak
+ *
+ * 实现 Eureka-Client 请求 Eureka-Server 的网络通信
  */
 public class JerseyApplicationClient extends AbstractJerseyEurekaHttpClient {
 

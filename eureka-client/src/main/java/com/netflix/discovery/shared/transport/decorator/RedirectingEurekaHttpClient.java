@@ -42,6 +42,8 @@ import org.slf4j.LoggerFactory;
  * Methods in this class may be called concurrently.
  *
  * @author Tomasz Bak
+ *
+ * 寻找非 302 重定向的 Eureka-Server 的 EurekaHttpClient 。
  */
 public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
 
@@ -73,10 +75,12 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
     @Override
     protected <R> EurekaHttpResponse<R> execute(RequestExecutor<R> requestExecutor) {
         EurekaHttpClient currentEurekaClient = delegateRef.get();
+        // 未找到非 302 的 Eureka-Server
         if (currentEurekaClient == null) {
             AtomicReference<EurekaHttpClient> currentEurekaClientRef = new AtomicReference<>(factory.newClient(serviceEndpoint));
             try {
                 EurekaHttpResponse<R> response = executeOnNewServer(requestExecutor, currentEurekaClientRef);
+                // 关闭原有的委托 EurekaHttpClient ，并设置当前成功非 302 请求的 EurekaHttpClient
                 TransportUtils.shutdown(delegateRef.getAndSet(currentEurekaClientRef.get()));
                 return response;
             } catch (Exception e) {
@@ -84,7 +88,7 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
                 TransportUtils.shutdown(currentEurekaClientRef.get());
                 throw e;
             }
-        } else {
+        } else {// 已经找到非 302 的 Eureka-Server
             try {
                 return requestExecutor.execute(currentEurekaClient);
             } catch (Exception e) {
