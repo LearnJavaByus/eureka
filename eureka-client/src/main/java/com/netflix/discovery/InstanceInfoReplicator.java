@@ -59,11 +59,11 @@ class InstanceInfoReplicator implements Runnable {
      */
     private final RateLimiter rateLimiter;
     /**
-     * // 限流相关，跳过
+     * // 限流相关，令牌桶上限，默认：2
      */
     private final int burstSize;
     /**
-     * // 限流相关，跳过
+     * // 限流相关，令牌再装平均速率，默认：60 * 2 / 30 = 4
      */
     private final int allowedRatePerMinute;
 
@@ -104,7 +104,7 @@ class InstanceInfoReplicator implements Runnable {
     }
 
     public boolean onDemandUpdate() {
-        // 限流相关，跳过
+        // 限流相关，
         if (rateLimiter.acquire(burstSize, allowedRatePerMinute)) {
             if (!scheduler.isShutdown()) {
                 scheduler.submit(new Runnable() {
