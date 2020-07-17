@@ -34,6 +34,11 @@ class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
         this.peerId = peerId;
     }
 
+    /**
+     * 处理单任务，用于 Eureka-Server 向亚马逊 AWS 的 ASG ( Autoscaling Group ) 同步状态
+     * @param task
+     * @return
+     */
     @Override
     public ProcessingResult process(ReplicationTask task) {
         try {
@@ -64,11 +69,19 @@ class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
         return ProcessingResult.Success;
     }
 
+    /**
+     * 处理批量任务，用于 Eureka-Server 集群注册信息的同步操作任务，通过调用被同步的 Eureka-Server 的 peerreplication/batch/ 接口，一次性将批量( 多个 )的同步操作任务发起请求
+     * @param tasks
+     * @return
+     */
     @Override
     public ProcessingResult process(List<ReplicationTask> tasks) {
+        // 创建 批量提交同步操作任务的请求对象
         ReplicationList list = createReplicationListOf(tasks);
         try {
+            // 发起 批量提交同步操作任务的请求
             EurekaHttpResponse<ReplicationListResponse> response = replicationClient.submitBatchUpdates(list);
+            // 处理 批量提交同步操作任务的响应
             int statusCode = response.getStatusCode();
             if (!isSuccess(statusCode)) {
                 if (statusCode == 503) {
@@ -126,12 +139,13 @@ class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
     }
 
     private void handleBatchResponse(ReplicationTask task, ReplicationInstanceResponse response) {
+        // 执行成功
         int statusCode = response.getStatusCode();
         if (isSuccess(statusCode)) {
             task.handleSuccess();
             return;
         }
-
+        // 执行失败
         try {
             task.handleFailure(response.getStatusCode(), response.getResponseEntity());
         } catch (Throwable e) {

@@ -41,6 +41,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Karthik Ranganathan
  *
+ * 同步操作任务 Resource ( Controller )
  */
 @Path("/{version}/peerreplication")
 @Produces({"application/xml", "application/json"})
@@ -80,6 +81,7 @@ public class PeerReplicationResource {
     public Response batchReplication(ReplicationList replicationList) {
         try {
             ReplicationListResponse batchResponse = new ReplicationListResponse();
+            // 逐个同步操作任务处理，并将处理结果( ReplicationInstanceResponse ) 合并到 ReplicationListResponse 。
             for (ReplicationInstance instanceInfo : replicationList.getReplicationList()) {
                 try {
                     batchResponse.addResponse(dispatch(instanceInfo));

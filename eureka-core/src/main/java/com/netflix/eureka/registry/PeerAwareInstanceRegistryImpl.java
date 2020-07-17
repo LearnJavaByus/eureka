@@ -96,9 +96,20 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
     private static final String US_EAST_1 = "us-east-1";
     private static final int PRIME_PEER_NODES_RETRY_MS = 30000;
 
+    /**
+     *  设置启动时间
+     */
     private long startupTime = 0;
     private boolean peerInstancesTransferEmptyOnStartup = true;
 
+    /**
+     * 同步操作类型
+     * Heartbeat  续租
+     * Register  注册
+     * Cancel  下线
+     * StatusUpdate 覆盖状态
+     * DeleteStatusOverride 覆盖状态
+     */
     public enum Action {
         Heartbeat, Register, Cancel, StatusUpdate, DeleteStatusOverride;
 
@@ -204,6 +215,8 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
      * Populates the registry information from a peer eureka node. This
      * operation fails over to other nodes until the list is exhausted if the
      * communication fails.
+     *
+     * 从集群的一个 Eureka-Server 节点获取初始注册信息
      */
     @Override
     public int syncUp() {
@@ -211,6 +224,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
         int count = 0;
 
         for (int i = 0; ((i < serverConfig.getRegistrySyncRetries()) && (count == 0)); i++) {
+            // 未读取到注册信息，sleep 等待
             if (i > 0) {
                 try {
                     Thread.sleep(serverConfig.getRegistrySyncRetryWaitMs());
@@ -219,12 +233,14 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                     break;
                 }
             }
+            // 获取注册信息
             Applications apps = eurekaClient.getApplications();
             for (Application app : apps.getRegisteredApplications()) {
                 for (InstanceInfo instance : app.getInstances()) {
                     try {
                         // isRegisterable：是否可以在当前服务实例所在的注册中心注册。这个方法一定返回true，那么count就是相邻注册中心所有服务实例数量
-                        if (isRegisterable(instance)) {
+                        if (isRegisterable(instance)) { // 判断是否能够注册
+                            // 注册应用实例到自身节点
                             register(instance, instance.getLeaseInfo().getDurationInSecs(), true);
                             count++;
                         }
@@ -686,6 +702,8 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
             if (isReplication) {
                 numberOfReplicationsLastMin.increment();
             }
+
+            // Eureka-Server 发起的请求 或者 集群为空
             // If it is a replication already, do not replicate again as this will create a poison replication
             if (peerEurekaNodes == Collections.EMPTY_LIST || isReplication) {
                 return;
